@@ -2,7 +2,7 @@
 
 ### TODO:
 
-- [ ] David: Pedir acceso para Sergi al server
+- [x] David: Pedir acceso para Sergi al server
 - [ ] Sergi-David: Descargar dataset de FashionGEN
 - [ ] Leer presentación de FashionGEN, CLIP, StyleGAN, Dalle, StyleClip
 - [ ] Server; Aprender Docker
