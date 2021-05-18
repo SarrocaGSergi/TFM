@@ -1,6 +1,6 @@
 # TFM
 
-#### Gestión del TFM
+#### TFM management
 * https://github.com/SarrocaGSergi/TFM/projects/1
 
 #### Docs
