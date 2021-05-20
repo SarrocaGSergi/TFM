@@ -2,9 +2,9 @@
 
 ## Style-GAN 
 
-[PAPER:](https://arxiv.org/pdf/1812.04948.pdf) A Style-Based Generator Architecture for Generative Adversarial Networks
+PAPER: [A Style-Based Generator Architecture for Generative Adversarial Networks](https://arxiv.org/pdf/1812.04948.pdf) 
          
 ## FASHION-GEN
 
-[PAPER:](https://arxiv.org/pdf/1806.08317.pdf) The Generative Fashion Dataset and Challenge
+PAPER: [The Generative Fashion Dataset and Challenge](https://arxiv.org/pdf/1806.08317.pdf) 
        
