@@ -31,11 +31,14 @@ random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 dataset_name = "fashion_mnist"
 
+
 # Defining some variables
 if dataset_name == "fashion_mnist":
     data_root = "../app/data/fashion_mnist"
+    print("Dataset: " + dataset_name)
 elif dataset_name == "mnist":
     data_root = "../app/data/mnist"
+    print("Dataset: " + dataset_name)
 
 # number of workers for dataloaders
 workers = 2
@@ -83,15 +86,25 @@ print(device)
 
 print("Creating summary writer...")
 
-directory = "../app/cgan_results/c-wgan_results"
+directory = "../app/cgan_results/c-wgan_results/fashion_mnist"
+
+print(directory)
+
 
 if not os.path.exists(directory):
+    print("Creating directory: " + directory)
     os.mkdir(directory)
     writer = SummaryWriter(directory)
+    print("Summary Created on: " + directory)
+elif os.path.exists(directory):
+    print("Creating Summary at: " + directory)
+    writer = SummaryWriter(directory)
+    print("Summary Created on: " + directory)
 else:
+    directory = "../app/cgan_results/c-wgan_results"
+    print("Summary Created on: " + directory)
     writer = SummaryWriter(directory)
 
-print("Summary Created on: " + directory)
 
 real_batch = iter(dataloader)
 images, labels = real_batch.next()
