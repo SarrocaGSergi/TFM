@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from IPython.display import HTML
 from torch.utils.tensorboard import SummaryWriter
+from utils import *
+from models import *
 
 torch.cuda.empty_cache()
 
@@ -28,22 +30,38 @@ manualSeed = 999
 print("Random Seed: ", manualSeed)
 random.seed(manualSeed)
 torch.manual_seed(manualSeed)
+dataset_name = "fashiongen"
+opt = "Adam"
+net = "DCGAN"
 
-# Root directory for dataset
-dataroot = "../app/data/mnist"
+# Defining some variables
+if dataset_name == "fashion_mnist":
+    data_root = "../app/data/fashion_mnist"
+    print("Dataset: " + dataset_name)
+elif dataset_name == "mnist":
+    data_root = "../app/data/mnist"
+    print("Dataset: " + dataset_name)
+elif dataset_name == "cifar10":
+    data_root = "/app/data/cifar10"
+    print("Dataset: " + dataset_name)
+elif dataset_name == "celeba":
+    data_root = "/app/data/celeba"
+    print("Dataset: " + dataset_name)
+elif dataset_name == "fashiongen":
+    data_root = "/app/data/fashion_gen/fashion_gen/fashiongen_full_size_train.h5"
+    print("Dataset: " + dataset_name)
 
 # Number of workers for dataloader
-workers = 1
+workers = 2
 
 # Batch size during training
-batch_size = 128
+batch_size = 64
 
 # Spatial size of training images. All images will be resized to this
 #   size using a transformer.
 image_size = 64
 
-# Number of channels in the training images. For color images this is 3
-nc = 1
+nc, number_classes, dictionary = data_classes(data_name=dataset_name)
 
 # Size of z latent vector (i.e. size of generator input)
 nz = 100
@@ -55,13 +73,14 @@ ngf = 64
 ndf = 64
 
 # Number of training epochs
-num_epochs = 5
+num_epochs = 15
 
 # Learning rate for optimizers
-lr = 0.0002
+learning_rate = 2e-4
 
 # Beta1 hyperparam for Adam optimizers
 beta1 = 0.5
+beta2 = 0.9
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
@@ -69,56 +88,21 @@ ngpu = 1
 transform = transforms.Compose([transforms.Resize(image_size),
                                 transforms.CenterCrop(image_size),
                                 transforms.ToTensor(),
-                                transforms.Normalize((0.5), (0.5))])
-print("Loading Data...")
-
-dataset = dset.MNIST(root=dataroot, train=True, transform=transform, download=False)
-# Create the dataloader
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
-                                         shuffle=True, num_workers=workers)
-
-print("Data loaded.")
+                                transforms.Normalize(
+                                    [0.5 for _ in range(nc)], [0.5 for _ in range(nc)]),
+                                ])
 
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 print(device)
 
+print("Loading Data...")
 
-def matplotlib_imshow(img, one_channel=False):
-    if one_channel:
-        img = img.mean(dim=0)
-    img = img / 2 + 0.5  # unnormalize
-    npimg = img.numpy()
-    if one_channel:
-        plt.imshow(npimg, cmap="Greys")
-    else:
-        plt.imshow(np.transpose(npimg, (1, 2, 0)))
+dataset, dataloader = select_dataset(dataset_name=dataset_name, data_root=data_root, transform=transform, dictionary=dictionary,
+                                     workers=workers, batch_size=batch_size)
 
 
-print("Creating summary writer...")
-
-writer = SummaryWriter("/app/test_results/")
-
-print("Summary Created")
-
-real_batch = iter(dataloader)
-images, labels = real_batch.next()
-img_grid = torchvision.utils.make_grid(images)
-matplotlib_imshow(img_grid, one_channel=True)
-writer.add_image('Training images', img_grid)
-
-
-# custom weights initialization called on netG and netD
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
-        nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find('BatchNorm') != -1:
-        nn.init.normal_(m.weight.data, 1.0, 0.02)
-        nn.init.constant_(m.bias.data, 0)
-
-
-print("Weight initialization complete")
+print("Data loaded.")
 
 
 # Generator Code
@@ -225,30 +209,20 @@ real_label = 1.
 fake_label = 0.
 
 # Setup Adam optimizers for both G and D
-optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
-optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
+optimizerD = optim.Adam(netD.parameters(), lr=learning_rate, betas=(beta1, beta2))
+optimizerG = optim.Adam(netG.parameters(), lr=learning_rate, betas=(beta1, beta2))
 
-classes = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
-# helper function
-def select_n_random(data, labels, n=100):
+# Plotting on Tensorboard
+print("Creating summary writer...")
+directory = "/app/gan_results/"
+print("Creating Summary at: " + directory)
+writer = SummaryWriter(directory + net + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{learning_rate}")
+print("Summary Created on: " + directory + net + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{learning_rate}")
 
-    assert len(data) == len(labels)
-
-    perm = torch.randperm(len(data))
-    return data[perm][:n], labels[perm][:n]
-
-# select random images and their target indices
-images, labels = select_n_random(dataset.data, dataset.targets)
-
-# get the class labels for each image
-class_labels = [classes[lab] for lab in labels]
-
-# log embeddings
-features = images.view(-1, 28 * 28)
-writer.add_embedding(features,
-                    metadata=class_labels,
-                    label_img=images.unsqueeze(1))
-writer.close()
+real_batch = iter(dataloader)
+images, labels = real_batch.next()
+img_grid = torchvision.utils.make_grid(images, normalize=True)
+writer.add_image('Training images', img_grid)
 
 # Training Loop
 
@@ -327,9 +301,7 @@ for epoch in range(num_epochs):
             # Discriminator
             ################
             writer.add_scalar('Generator Loss', errG, global_step=iters)
-            fake_grid = torchvision.utils.make_grid(netG(fixed_noise).detach().cpu())
-            matplotlib_imshow(fake_grid, one_channel=True)
-            writer.add_image('Generated Images', fake_grid)
+
 
         # Save Losses for plotting later
         G_losses.append(errG.item())
@@ -339,29 +311,12 @@ for epoch in range(num_epochs):
         if (iters % 500 == 0) or ((epoch == num_epochs - 1) and (i == len(dataloader) - 1)):
             with torch.no_grad():
                 fake = netG(fixed_noise).detach().cpu()
-            img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
-
-        # Tensorboard
-
+                fake_grid = torchvision.utils.make_grid(fake, normalize=True)
+                writer.add_image('Generated Images', fake_grid, global_step=iters)
 
 
         iters += 1
 
 writer.close()
 
-plt.figure(figsize=(10, 5))
-plt.title("Generator and Discriminator Loss During Training")
-plt.plot(G_losses, label="G")
-plt.plot(D_losses, label="D")
-plt.xlabel("iterations")
-plt.ylabel("Loss")
-plt.legend()
-plt.show()
 
-# %%capture
-fig = plt.figure(figsize=(8, 8))
-plt.axis("off")
-ims = [[plt.imshow(np.transpose(i, (1, 2, 0)), animated=True)] for i in img_list]
-ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
-
-HTML(ani.to_jshtml())
