@@ -1,0 +1,18 @@
+image: registry.console.elementai.com/uab.uab_tfm/python_env
+interactive: true
+command:
+  - /tk/bin/start.sh
+  - /bin/bash
+  - -c
+
+
+resources:
+  cpu: 4
+  mem: 32
+  gpu: 1
+
+data:
+  - snow.eai_rafa.fashion_gen:/app/data/fashion_gen
+  - uab.uab_tfm.celeba:/app/data/celeba
+  - uab.uab_tfm.gan_results:/app/gan_results/
+  - uab.uab_tfm.vscode:/app/vscode

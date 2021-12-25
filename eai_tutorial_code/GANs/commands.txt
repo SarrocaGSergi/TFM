@@ -1,0 +1,22 @@
+# New jobs
+eai job new \
+--data uab.uab_tfm.DIRECTORY:/app/data/DIRECTORY \
+--data uab.uab_tfm.DIRECTORY:/app/DIRECTORY \
+--image registry.console.elementai.com/uab.uab_tfm/image_name \
+--gpu 1 --mem 16
+
+# Tensorboard
+
+eai job new \
+--data uab.uab_tfm.DIRECTORY:/app/DIRECTORY \
+--image tensorflow/tensorflow \
+-- tensorboard --bind_all --logdir /app/DIRECTORY
+
+# Building and pushing docker images
+
+docker build -t registry.console.elementiai.com/uab.uab_tfm/image_name .
+docker push registry.console.elementai.com/uab.uab_tfm/image_name
+
+eai job submit -f remote-env.yml
+eai job port-forward --last 2222
+
