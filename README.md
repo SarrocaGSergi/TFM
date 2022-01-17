@@ -11,3 +11,5 @@ Datasets: https://paperswithcode.com/dataset/celeba
 
 > StyleGAN:  
 Paper: https://arxiv.org/abs/1812.04948  
+
+> Google Slides: https://docs.google.com/presentation/d/1nCwbefOx-rrPQlFhCvmk8oVeEe0K-IX3fToiJn9An2c/edit?usp=sharing
