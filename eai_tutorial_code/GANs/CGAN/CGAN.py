@@ -30,7 +30,7 @@ random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
 # Root directory for dataset
-dataroot = "../app/data/mnist"
+data_root = "/app/data/celeba"
 # dataroot ="../data/MNIST"
 # Number of workers for dataloader
 workers = 2
@@ -43,7 +43,7 @@ batch_size = 128
 image_size = 64
 number_classes = 10
 # Number of channels in the training images. For color images this is 3
-nc = 1
+nc = 3
 
 # Size of z latent vector (i.e. size of generator input)
 nz = 100
@@ -72,7 +72,7 @@ transform = transforms.Compose([transforms.Resize(image_size),
                                 transforms.Normalize((0.5), (0.5))])
 print("Loading Data...")
 
-dataset = dset.MNIST(root=dataroot, train=True, transform=transform, download=False)
+dataset = dset.MNIST(root=data_root, train=True, transform=transform, download=False)
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                          shuffle=True, num_workers=workers)

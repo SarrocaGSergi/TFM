@@ -10,11 +10,11 @@ eai job new \
 eai job new \
 --data uab.uab_tfm.DIRECTORY:/app/DIRECTORY \
 --image tensorflow/tensorflow \
--- tensorboard --bind_all --logdir /app/DIRECTORY
+-- tensorboard --bind_all --samples_per_plugin images=N --logdir /app/DIRECTORY
 
 # Building and pushing docker images
 
-docker build -t registry.console.elementiai.com/uab.uab_tfm/image_name .
+docker build -t registry.console.elementai.com/uab.uab_tfm/image_name .
 docker push registry.console.elementai.com/uab.uab_tfm/image_name
 
 eai job submit -f remote-env.yml

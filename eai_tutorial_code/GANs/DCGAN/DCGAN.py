@@ -237,6 +237,8 @@ def select_n_random(data, labels, n=100):
     perm = torch.randperm(len(data))
     return data[perm][:n], labels[perm][:n]
 
+images, targets = dataset.images, dataset.targets
+
 # select random images and their target indices
 images, labels = select_n_random(dataset.data, dataset.targets)
 

@@ -34,6 +34,9 @@ def select_dataset(dataset_name, data_root, transform, workers=1, batch_size=64)
         dataset = dset.CIFAR10(root=data_root, train=True, transform=transform, download=True)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size, shuffle=True, num_workers=workers)
 
+    elif dataset_name == "celeba":
+        dataset = dset.ImageFolder(root=data_root, transform=transform)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size, shuffle=True, num_workers=workers)
 
     return dataset, dataloader
 

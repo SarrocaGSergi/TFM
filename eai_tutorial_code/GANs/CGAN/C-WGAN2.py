@@ -365,5 +365,5 @@ for bs in batch_size:
                     img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
                 iters += 1
-        writer.add_hparams({"lr": lr, "bsize": bs}, {"DLoss": sum(D_losses)/len(D_losses), "GLoss": sum(G_losses)/len(G_losses)})
+        writer.add_hparams({"learning_rate": lr, "bsize": bs}, {"DLoss": sum(D_losses)/len(D_losses), "GLoss": sum(G_losses)/len(G_losses)})
         writer.close()
