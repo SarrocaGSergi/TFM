@@ -279,7 +279,7 @@ def plot_loss(graph, name, out_path, color='b'):
     plt.savefig(path)
 
 
-def smooth_graph(graph, name, out_path, smooth_param=0.9, color='b'):
+def smooth_graph(graph, name, out_path, smooth_param=0.99, color='b'):
     save_name = name + '.png'
     inside_name = name.replace("_", " ")
     alpha = len(graph) * (1-smooth_param)

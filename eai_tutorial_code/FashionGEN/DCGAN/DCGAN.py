@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import torch.jit
 import torchvision
 import random
 from torch import optim
@@ -125,6 +126,8 @@ optimizerG = optim.Adam(netG.parameters(), lr=learning_rate, betas=(beta1, beta2
 print("Creating summary writer...")
 directory = "/app/gan_results/pipup results/"
 OUT_PATH = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{learning_rate}"
+GEN_WEIGHTS = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{learning_rate}+/gen_weights"
+DISC_WEIGHTS = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{learning_rate}+/disc_weights"
 writer = SummaryWriter(OUT_PATH)
 print("Summary Created on: " + OUT_PATH)
 
@@ -237,6 +240,16 @@ for epoch in range(num_epochs):
           % (epoch, num_epochs, i, len(dataloader),
              errD.item(), errG.item(), FID))
     writer.add_scalar('FID', FID, global_step=ITERS)
+    # Saving the full model
+    netD_encripted = torch.jit.script(netD)
+    netG_encripted = torch.jit.script(netG)
+
+    torch.save(DISC_WEIGHTS + "/netD.pt")
+    torch.save(GEN_WEIGHTS + "/netG.pt")
+
+    # Saving the weights every epoch
+    torch.save(netD.state_dict(), DISC_WEIGHTS)
+    torch.save(netG.state_dict(), GEN_WEIGHTS)
 
 writer.close()
 
