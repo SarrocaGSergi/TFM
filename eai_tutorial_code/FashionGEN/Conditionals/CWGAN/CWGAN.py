@@ -138,9 +138,9 @@ for bs in batch_size:
         # Plotting on Tensorboard
         print("Creating summary writer...")
         directory = "/app/gan_results/final_results/Conditionals/"
-        OUT_PATH = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{learning_rate}"
-        GEN_WEIGHTS = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{learning_rate}+/gen_weights"
-        DISC_WEIGHTS = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{learning_rate}+/disc_weights"
+        OUT_PATH = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{lr}"
+        GEN_WEIGHTS = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{lr}+/gen_weights"
+        DISC_WEIGHTS = directory + network + "/" + dataset_name + "/" + f"{num_epochs}" + "/" + opt + "/" + f"{batch_size}" + "/" + f"{lr}+/disc_weights"
         writer = SummaryWriter(OUT_PATH)
         print("Summary Created on: " + OUT_PATH)
 
