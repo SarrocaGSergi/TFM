@@ -21,7 +21,7 @@ random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 dataset_name = "fashiongen"
 opt = "Adam"
-net = "CBN-WGAN"
+net = "T-WGAN"
 
 # Defining some variables
 if dataset_name == "fashion_mnist":

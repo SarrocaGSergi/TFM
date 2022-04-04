@@ -2,14 +2,16 @@ FROM continuumio/miniconda3
 
 # TODO Here, install your dependencies for example, Pytorch and jupyter.
 WORKDIR /app
-RUN pip install tensorboard
 RUN conda install python=3.8
-RUN conda install poetry -y \
+RUN conda update pip -y \
+    && conda install poetry -y \
     && conda install wrapt==1.12.1 llvmlite==0.31.0 pyyaml==5.3 notebook --channel conda-forge -y \
-    && conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch \
+    && conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch \
     && conda install -c huggingface transformers \
-
-
+    && conda install -c conda-forge tensorboard \
+    && conda install -c conda-forge matplotlib \
+    && conda install -c anaconda h5py \
+    && conda install -c anaconda scipy
 
 
 

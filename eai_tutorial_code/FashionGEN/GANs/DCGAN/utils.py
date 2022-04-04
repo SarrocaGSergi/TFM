@@ -1,10 +1,42 @@
 from __future__ import print_function
 
 # %matplotlib inline
+import numpy as np
+import matplotlib.pyplot as plt
+import torchvision
+import os
 import torch.nn.parallel
-import torch.utils.data
-
+from torch.utils.data import Dataset, DataLoader
+from torchvision.transforms import ToPILImage
+from scipy.interpolate import interp1d
+import PIL.Image as Image
 from models import *
+from FID import *
+
+
+def get_data_root(database_name="fashiongen"):
+    # Defining some variables
+    if database_name == "fashion_mnist":
+        data_root = "../app/data/fashion_mnist"
+        print("Dataset: " + database_name)
+    elif database_name == "mnist":
+        data_root = "/app/data/mnist"
+        print("Dataset: " + database_name)
+    elif database_name == "celeba":
+        data_root = "/app/data/celeba"
+        print("Dataset: " + database_name)
+    elif database_name == "fashiongen":
+        data_root = "/app/data/fashion_gen/fashion_gen/fashiongen_full_size_train.h5"
+        print("Dataset: " + database_name)
+
+    return data_root
+
+
+def projector_img_labs(dataset, b_size=100, n_workers=1, shuff=True):
+    dataloader = DataLoader(dataset, batch_size=b_size, shuffle=shuff, num_workers=n_workers)
+    real_batch = iter(dataloader)
+    images, labels = real_batch.next()
+    return images, labels
 
 
 def text_processing(labels, model, tokenizer):
@@ -36,22 +68,6 @@ def data_classes(data_name="mnist"):
         nc = 1
         number_classes = 10
         dictionary = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
-
-    elif data_name == "cifar10":
-        # Number of channels
-        nc = 3
-        number_classes = 10
-        dictionary = {0: "airplane",
-                      1: "automobile",
-                      2: "bird",
-                      3: "cat",
-                      4: "deer",
-                      5: "dog",
-                      6: "frog",
-                      7: "horse",
-                      8: "ship",
-                      9: "truck"
-                      }
 
     elif data_name == "celeba":
         # Number of channels
@@ -125,17 +141,14 @@ def change_label(labels, dictionary):
     return torch.LongTensor(np.array(y))
 
 
-def select_dataset(net,dataset_name, data_root, transform, dictionary, workers=1, batch_size=64):
+def load_dataset(net, dataset_name, data_root, transform, dictionary, workers=1, batch_size=64):
+
     if dataset_name == "fashion_mnist":
         dataset = dset.FashionMNIST(root=data_root, train=True, transform=transform, download=True)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size, shuffle=True, num_workers=workers)
 
     elif dataset_name == "mnist":
         dataset = dset.MNIST(root=data_root, train=True, transform=transform, download=True)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size, shuffle=True, num_workers=workers)
-
-    elif dataset_name == "cifar10":
-        dataset = dset.CIFAR10(root=data_root, train=True, transform=transform, download=True)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size, shuffle=True, num_workers=workers)
 
     elif dataset_name == "celeba":
@@ -145,24 +158,26 @@ def select_dataset(net,dataset_name, data_root, transform, dictionary, workers=1
     elif dataset_name == "fashiongen":
         if net == "T-WGAN":
             dataset = FashionGen(train_root=data_root, transform=transform, text_transform=False, dictionary=dictionary)
-            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
+            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=workers)
         else:
             dataset = FashionGen(train_root=data_root, transform=transform, text_transform=True, dictionary=dictionary)
-            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=workers)
+            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
 
     return dataset, dataloader
 
 
-# Help function to show processed images from tensors
-def matplotlib_imshow(img, one_channel=False):
-    if one_channel:
-        img = img.mean(dim=0)
-    img = img / 2 + 0.5  # unnormalize
-    npimg = img.numpy()
-    if one_channel:
-        plt.imshow(npimg, cmap="Greys")
-    else:
-        plt.imshow(np.transpose(npimg, (1, 2, 0)))
+def sample_save(sample_grid, save_dir, save_name):
+    out_path = os.path.join(save_dir, save_name)
+    pil_image = ToPILImage()(sample_grid)
+    pil_image.save(out_path)
+
+
+def load_dataset_sample(dataloader, save_dir, save_name="dataset_sample.png"):
+    real_batch = iter(dataloader)
+    images, labels = real_batch.next()
+    img_grid = torchvision.utils.make_grid(images, normalize=True)
+    sample_save(img_grid, save_dir, save_name)
+    return img_grid
 
 
 # Weight initialization to break symmetry on first backward gradients (Avoid to learn the same on each neuron)
@@ -178,9 +193,9 @@ def weights_init(m):
 
 # helper function
 def select_n_random(data, labels, n=100):
-    #print(len(data))
-    print(len(labels))
+
     assert len(data) == len(labels)
+
     perm = torch.randperm(len(data))
     return data[perm][:n], labels[perm][:n]
 
@@ -195,6 +210,14 @@ def cond_labels(number_classes):
         x += 1
 
     return fixed_labels
+
+
+def load_FID():
+    # Preparing Evaluation Metric
+    block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
+    model = InceptionV3([block_idx])
+    model = model.cuda()
+    return model
 
 
 def gradient_penalty(discriminator, real_batch, fake_batch, l, labels=True, device='cpu'):
@@ -222,3 +245,66 @@ def gradient_penalty(discriminator, real_batch, fake_batch, l, labels=True, devi
     gradient_pnlty = torch.mean((gradient_norm-1) ** 2)
 
     return gradient_pnlty
+
+
+def disc_versus_gen(g_loss, d_loss, out_path):
+    plt.figure(figsize=(150, 75))
+    plt.title("Generator v.s Discriminator")
+    plt.plot(g_loss, label='G', linewidth=10)
+    plt.plot(d_loss, label='D', linewidth=10)
+    plt.xlabel("Iterations", fontsize=200)
+    plt.ylabel("Loss", fontsize=200)
+    plt.yticks(fontsize=200)
+    plt.xticks(fontsize=200)
+    plt.legend(fontsize=175)
+    path = out_path + "/" + "G-vs-D.png"
+    plt.savefig(path)
+
+
+def plot_loss(graph, name, out_path, color='b'):
+    save_name = name + '.png'
+    inside_name = name.replace("_", " ")
+    plt.figure(figsize=(150, 75))
+    plt.title(f"{inside_name} Progression", fontsize=200)
+    plt.plot(graph, label=f"{inside_name}", color=color, linewidth=10)
+    if name == "FID":
+        plt.xlabel("Epochs", fontsize=200)
+    else:
+        plt.xlabel("Iterations", fontsize=200)
+    plt.ylabel("Loss", fontsize=200)
+    plt.yticks(fontsize=200)
+    plt.xticks(fontsize=200)
+    plt.legend(fontsize=175)
+    path = out_path + f"/{save_name}"
+    plt.savefig(path)
+
+
+def smooth_graph(graph, name, out_path, smooth_param=0.999, color='b'):
+    save_name = name + '.png'
+    inside_name = name.replace("_", " ")
+    alpha = len(graph) * (1-smooth_param)
+    x = np.linspace(0, len(graph), len(graph), endpoint=True)
+    f = interp1d(x, graph, kind='linear')
+    new_graph = np.linspace(0, alpha, len(graph), endpoint=True)
+    new_graph = f(new_graph)
+    plt.figure(figsize=(150, 75))
+    plt.title(f"{inside_name} Progression", fontsize=200)
+    plt.plot(new_graph, label=f"{inside_name}", color=color, linewidth=10)
+    plt.xlabel("Iterations", fontsize=200)
+    plt.ylabel("Loss", fontsize=200)
+    plt.yticks(fontsize=200)
+    plt.xticks(fontsize=200)
+    plt.legend(fontsize=175)
+    path = out_path + f"/{save_name}"
+    plt.savefig(path)
+
+
+def create_gif(grid, save_dir):
+    save_dir = os.path.join(save_dir, 'noise_progression.gif')
+    l = []
+    for img in grid:
+        pil_image = ToPILImage()(img)
+        l.append(pil_image)
+
+    l[0].save(save_dir, save_all=True, append_images=l[1:],
+              optimize=False, duration=500, loop=0)

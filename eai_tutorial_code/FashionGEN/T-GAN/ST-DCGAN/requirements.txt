@@ -1,0 +1,6 @@
+matplotlib
+IPython
+tensorboard
+transformers
+h5py
+scipy
