@@ -33,7 +33,5 @@ The first experiments performed with this technique were using just a word for c
 
 Finally, we tested this same experiment but by the use of text descriptions that contain much more information of how the images should be generated. In this case the transformer had to encode each of the descriptions in a batch into a 768 embedding that contains the latent information of the description. Therefore, the input of the first normalization layer is [64, 128] from the vision modality and [64, 768] from the text modality and the output is a feature vector with shape [64, 128].
 
-### RESULTS ON DCGAN 
-
 
 > Google Slides: https://docs.google.com/presentation/d/1nCwbefOx-rrPQlFhCvmk8oVeEe0K-IX3fToiJn9An2c/edit?usp=sharing
